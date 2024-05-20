@@ -6,12 +6,6 @@ import (
 
 type Model interface{}
 
-type Application struct {
-	ID   int    `json:"id" column:"id" primary:"true"`
-	Name string `json:"name" column:"name"`
-	Slug string `json:"slug" column:"slug"`
-}
-
 type Repository[M Model] struct {
 	*Database
 }
@@ -40,18 +34,7 @@ func (r Repository[M]) FindAll(ctx context.Context) ([]M, error) {
 	return items, nil
 }
 
-func (r *Repository[M]) FindOne(ctx context.Context, id int) (*M, error) {
-	var item *M = new(M)
-
-	err := r.NewSelect().Model((*M)(nil)).Where("id = ?", id).Scan(ctx, item)
-	if err != nil {
-		return nil, err
-	}
-
-	return item, nil
-}
-
-func (r *Repository[M]) FindOneBy(ctx context.Context, field string, value interface{}) (*M, error) {
+func (r *Repository[M]) FindOneBy(ctx context.Context, field string, value any) (*M, error) {
 	var item *M = new(M)
 
 	err := r.NewSelect().Model((*M)(nil)).Where(field+" = ?", value).Scan(ctx, item)
@@ -64,18 +47,17 @@ func (r *Repository[M]) FindOneBy(ctx context.Context, field string, value inter
 
 func (r *Repository[M]) UpdateOne(ctx context.Context, item M) error {
 	_, err := r.NewUpdate().Model(item).Exec(ctx)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
-func (r *Repository[M]) DeleteOne(ctx context.Context, id int) error {
-	_, err := r.NewDelete().Model((*M)(nil)).Where("id = ?", id).Exec(ctx)
-	if err != nil {
-		return err
-	}
+func (r *Repository[M]) DeleteOne(ctx context.Context, item M) error {
+	_, err := r.NewDelete().Model(item).Exec(ctx)
+	return err
+}
 
-	return nil
+func (r *Repository[M]) DeleteOneWhere(ctx context.Context, field string, value any) error {
+	_, err := r.NewDelete().Model((*M)(nil)).Where(field+" = ?", value).Exec(ctx)
+
+	return err
 }
