@@ -45,14 +45,9 @@ func (r *Repository[M]) FindOneBy(ctx context.Context, field string, value any) 
 	return item, nil
 }
 
-func (r *Repository[M]) UpdateOne(ctx context.Context, item M) error {
-	_, err := r.NewUpdate().Model(item).Exec(ctx)
+func (r *Repository[M]) UpdateOneWhere(ctx context.Context, field string, value any, item *M) error {
+	_, err := r.NewUpdate().Model(item).Where(field+" = ?", value).Exec(ctx)
 
-	return err
-}
-
-func (r *Repository[M]) DeleteOne(ctx context.Context, item M) error {
-	_, err := r.NewDelete().Model(item).Exec(ctx)
 	return err
 }
 
