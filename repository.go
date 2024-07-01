@@ -63,14 +63,67 @@ func (r *Repository[M]) FindOneBy(ctx context.Context, args ...any) (*M, error) 
 	return item, nil
 }
 
-func (r *Repository[M]) UpdateOneWhere(ctx context.Context, field string, value any, item *M) error {
-	_, err := r.NewUpdate().Model(item).Where(field+" = ?", value).Exec(ctx)
+// UpdateOneWhere updates a single record in the database based on multiple field conditions.
+// It accepts a context, a variadic list of arguments representing field-value pairs, and the item to be updated.
+// The args should be passed in pairs like ("field1", value1, "field2", value2).
+func (r *Repository[M]) UpdateOneWhere(ctx context.Context, item *M, args ...any) error {
+	// Ensure args are in key-value pairs
+	if len(args)%2 != 0 {
+		return errors.New("arguments must be key-value pairs")
+	}
+
+	// Start building the update query
+	query := r.NewUpdate().Model(item)
+
+	// Iterate through the arguments to build the WHERE clause
+	for i := 0; i < len(args); i += 2 {
+		// Ensure the key is a string representing the field name
+		field, ok := args[i].(string)
+		if !ok {
+			return errors.New("field names must be strings")
+		}
+		// Get the value associated with the field
+		value := args[i+1]
+		// Add the condition to the query
+		query = query.Where(field+" = ?", value)
+	}
+
+	// Execute the update query
+	_, err := query.Exec(ctx)
 
 	return err
 }
 
-func (r *Repository[M]) DeleteOneWhere(ctx context.Context, field string, value any) error {
-	_, err := r.NewDelete().Model((*M)(nil)).Where(field+" = ?", value).Exec(ctx)
+// DeleteOneWhere deletes a single record from the database based on multiple field conditions.
+// It accepts a context and a variadic list of arguments representing field-value pairs.
+// The args should be passed in pairs like ("field1", value1, "field2", value2).
+func (r *Repository[M]) DeleteOneWhere(ctx context.Context, args ...any) error {
+	// Ensure args are in key-value pairs
+	if len(args)%2 != 0 {
+		return errors.New("arguments must be key-value pairs")
+	}
+
+	// Initialize the model item
+	var item *M = new(M)
+
+	// Start building the delete query
+	query := r.NewDelete().Model(item)
+
+	// Iterate through the arguments to build the WHERE clause
+	for i := 0; i < len(args); i += 2 {
+		// Ensure the key is a string representing the field name
+		field, ok := args[i].(string)
+		if !ok {
+			return errors.New("field names must be strings")
+		}
+		// Get the value associated with the field
+		value := args[i+1]
+		// Add the condition to the query
+		query = query.Where(field+" = ?", value)
+	}
+
+	// Execute the delete query
+	_, err := query.Exec(ctx)
 
 	return err
 }
