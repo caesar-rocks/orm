@@ -2,6 +2,7 @@ package orm
 
 import (
 	"context"
+	"errors"
 )
 
 type Model interface{}
@@ -34,10 +35,27 @@ func (r Repository[M]) FindAll(ctx context.Context) ([]M, error) {
 	return items, nil
 }
 
-func (r *Repository[M]) FindOneBy(ctx context.Context, field string, value any) (*M, error) {
-	var item *M = new(M)
+// FindOneBy finds a single record from the database based on multiple field conditions.
+// It accepts a context and a variadic list of arguments representing field-value pairs.
+// The args should be passed in pairs like ("field1", value1, "field2", value2).
+func (r *Repository[M]) FindOneBy(ctx context.Context, args ...any) (*M, error) {
+	if len(args)%2 != 0 {
+		return nil, errors.New("arguments must be key-value pairs")
+	}
 
-	err := r.NewSelect().Model((*M)(nil)).Where(field+" = ?", value).Scan(ctx, item)
+	var item *M = new(M)
+	query := r.NewSelect().Model((*M)(nil))
+
+	for i := 0; i < len(args); i += 2 {
+		field, ok := args[i].(string)
+		if !ok {
+			return nil, errors.New("field names must be strings")
+		}
+		value := args[i+1]
+		query = query.Where(field+" = ?", value)
+	}
+
+	err := query.Scan(ctx, item)
 	if err != nil {
 		return nil, err
 	}
